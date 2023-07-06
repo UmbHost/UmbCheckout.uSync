@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="uSync.BackOffice" Version="10.6.1" />
+    <PackageReference Include="uSync.Core" Version="10.6.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UmbCheckout.Core\UmbCheckout.Core.csproj" />
+    <ProjectReference Include="..\UmbCheckout.Shared\UmbCheckout.Shared.csproj" />
+  </ItemGroup>
+
+</Project>
