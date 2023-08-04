@@ -6,7 +6,7 @@
 
         public static class Configuration
         {
-            public const string ItemType = "Configuration";
+            public const string ItemType = "UmbCheckoutConfiguration";
 
             public const string SerializerName = "UmbCheckout Configuration Serializer";
 

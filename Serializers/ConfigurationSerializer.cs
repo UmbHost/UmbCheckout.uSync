@@ -20,7 +20,9 @@ namespace UmbCheckout.uSync.Serializers
         protected override SyncAttempt<XElement> SerializeCore(UmbCheckoutConfiguration item, SyncSerializerOptions options)
         {
             var node = new XElement(ItemType,
-                new XAttribute("Id", item.Id));
+                new XAttribute("Id", item.Id),
+                new XAttribute("Alias", ItemAlias(item)),
+                new XAttribute("Key", ItemKey(item)));
 
             node.Add(new XElement("BasketInCookieExpiry", item.BasketInCookieExpiry));
             node.Add(new XElement("BasketInDatabaseExpiry", item.BasketInDatabaseExpiry));
@@ -57,10 +59,52 @@ namespace UmbCheckout.uSync.Serializers
 
         protected override SyncAttempt<UmbCheckoutConfiguration> DeserializeCore(XElement node, SyncSerializerOptions options)
         {
-            var configuration = node.Element(Consts.Configuration.ItemType);
+            var successPageUrlElement = node.Element("SuccessPageUrl");
+            var successPageUrl = Enumerable.Empty<MultiUrlPicker>();
+            if (successPageUrlElement != null)
+            {
+                successPageUrl = new List<MultiUrlPicker>
+                {
+                    new()
+                    {
+                        Icon = successPageUrlElement.Element("Icon").ValueOrDefault(string.Empty),
+                        Name = successPageUrlElement.Element("Name").ValueOrDefault(string.Empty),
+                        Published = successPageUrlElement.Element("Published").ValueOrDefault(false),
+                        Trashed = successPageUrlElement.Element("Trashed").ValueOrDefault(false),
+                        Udi = successPageUrlElement.Element("Udi").ValueOrDefault(string.Empty),
+                        Url = successPageUrlElement.Element("Url").ValueOrDefault(string.Empty)
+                    }
+                };
+            }
+
+            var cancelPageUrlElement = node.Element("CancelPageUrl");
+            var cancelPageUrl = Enumerable.Empty<MultiUrlPicker>();
+            if (cancelPageUrlElement != null)
+            {
+                cancelPageUrl = new List<MultiUrlPicker>
+                {
+                    new()
+                    {
+                        Icon = cancelPageUrlElement.Element("Icon").ValueOrDefault(string.Empty),
+                        Name = cancelPageUrlElement.Element("Name").ValueOrDefault(string.Empty),
+                        Published = cancelPageUrlElement.Element("Published").ValueOrDefault(false),
+                        Trashed = cancelPageUrlElement.Element("Trashed").ValueOrDefault(false),
+                        Udi = cancelPageUrlElement.Element("Udi").ValueOrDefault(string.Empty),
+                        Url = cancelPageUrlElement.Element("Url").ValueOrDefault(string.Empty)
+                    }
+                };
+            }
+
             var item = new UmbCheckoutConfiguration
             {
-                StoreBasketInDatabase = configuration!.Element("StoreBasketInDatabase").ValueOrDefault(false)
+                Id = node.Attribute("Id").ValueOrDefault(0),
+                StoreBasketInDatabase = node!.Element("StoreBasketInDatabase").ValueOrDefault(false),
+                BasketInCookieExpiry = node!.Element("BasketInDatabaseExpiry").ValueOrDefault(30),
+                BasketInDatabaseExpiry = node!.Element("BasketInDatabaseExpiry").ValueOrDefault(30),
+                CancelPageUrl = cancelPageUrl,
+                SuccessPageUrl = successPageUrl,
+                EnableShipping = node!.Element("EnableShipping").ValueOrDefault(false),
+                StoreBasketInCookie = node!.Element("StoreBasketInCookie").ValueOrDefault(false)
             };
 
 
@@ -79,8 +123,8 @@ namespace UmbCheckout.uSync.Serializers
         {
         }
 
-        public override string ItemAlias(UmbCheckoutConfiguration item) => string.Empty;
+        public override string ItemAlias(UmbCheckoutConfiguration item) => "UmbCheckoutConfiguration";
 
-        public override Guid ItemKey(UmbCheckoutConfiguration item) => Guid.Empty;
+        public override Guid ItemKey(UmbCheckoutConfiguration item) => item.Key;
     }
 }
