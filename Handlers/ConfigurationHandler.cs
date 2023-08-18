@@ -49,10 +49,13 @@ namespace UmbCheckout.uSync.Handlers
 
             try
             {
-                var attempts = Export(notification.Configuration, Path.Combine(rootFolder, DefaultFolder), DefaultConfig);
-                foreach (var attempt in attempts.Where(x => x.Success))
+                if (notification.Configuration != null)
                 {
-                    CleanUp(notification.Configuration, attempt.FileName, Path.Combine(rootFolder, DefaultFolder));
+                    var attempts = Export(notification.Configuration, Path.Combine(rootFolder, DefaultFolder), DefaultConfig);
+                    foreach (var attempt in attempts.Where(x => x.Success))
+                    {
+                        CleanUp(notification.Configuration, attempt.FileName, Path.Combine(rootFolder, DefaultFolder));
+                    }
                 }
             }
             catch (Exception ex)
