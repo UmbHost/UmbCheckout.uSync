@@ -26,6 +26,7 @@ namespace UmbCheckout.uSync.Serializers
 
             node.Add(new XElement("BasketInCookieExpiry", item.BasketInCookieExpiry));
             node.Add(new XElement("BasketInDatabaseExpiry", item.BasketInDatabaseExpiry));
+            node.Add(new XElement("CurrencyCode", item.CurrencyCode));
             var cancelPageUrl = new XElement("CancelPageUrl");
             var cancelPage = item.CancelPageUrl.FirstOrDefault();
             if (cancelPage != null)
@@ -98,6 +99,7 @@ namespace UmbCheckout.uSync.Serializers
             var item = new UmbCheckoutConfiguration
             {
                 Id = node.Attribute("Id").ValueOrDefault(0),
+                CurrencyCode = node.Element("CurrencyCode").ValueOrDefault(string.Empty),
                 StoreBasketInDatabase = node!.Element("StoreBasketInDatabase").ValueOrDefault(false),
                 BasketInCookieExpiry = node!.Element("BasketInDatabaseExpiry").ValueOrDefault(30),
                 BasketInDatabaseExpiry = node!.Element("BasketInDatabaseExpiry").ValueOrDefault(30),
