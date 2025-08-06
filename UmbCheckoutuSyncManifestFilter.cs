@@ -1,7 +1,9 @@
-﻿using UmbCheckout.Shared;
+﻿using Microsoft.Extensions.DependencyInjection;
+using UmbCheckout.Shared;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Manifest;
+using Umbraco.Cms.Infrastructure.Manifest;
 
 namespace UmbCheckout.uSync
 {
@@ -9,21 +11,26 @@ namespace UmbCheckout.uSync
     {
         public void Compose(IUmbracoBuilder builder)
         {
-            builder.ManifestFilters().Append<UmbCheckoutuSyncManifestFilter>();
+            builder.Services.AddSingleton<IPackageManifestReader, UmbCheckoutuSyncManifestFilter>();
         }
     }
 
-    public class UmbCheckoutuSyncManifestFilter : IManifestFilter
+    internal sealed class UmbCheckoutuSyncManifestFilter : IPackageManifestReader
     {
-        public void Filter(List<PackageManifest> manifests)
+        public Task<IEnumerable<PackageManifest>> ReadPackageManifestsAsync()
         {
-            manifests.Add(new PackageManifest
-            {
-                PackageName = $"{Shared.Consts.PackageName}.uSync",
-                Version = UmbCheckoutVersion.Version.ToString(3),
-                AllowPackageTelemetry = true,
-                BundleOptions = BundleOptions.None
-            });
+            List<PackageManifest> manifest = [
+                new()
+                {
+                    Id = $"{Shared.Consts.PackageName}.uSync",
+                    Name = $"{Shared.Consts.PackageName}.uSync",
+                    AllowTelemetry = true,
+                    Version = UmbCheckoutVersion.Version.ToString(3),
+                    Extensions = []
+                }
+            ];
+
+            return Task.FromResult(manifest.AsEnumerable());
         }
     }
 }
