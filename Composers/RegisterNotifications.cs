@@ -9,7 +9,7 @@ namespace UmbCheckout.uSync.Composers
     {
         public void Compose(IUmbracoBuilder builder)
         {
-            builder.AddNotificationHandler<OnConfigurationSavedNotification, ConfigurationHandler>();
+            builder.AddNotificationAsyncHandler<OnConfigurationSavedNotification, ConfigurationHandler>();
         }
     }
 }

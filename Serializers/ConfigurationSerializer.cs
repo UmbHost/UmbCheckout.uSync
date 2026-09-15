@@ -1,4 +1,4 @@
-﻿using System.Xml.Linq;
+using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using UmbCheckout.Core.Interfaces;
 using UmbCheckout.Shared.Models;
@@ -17,7 +17,7 @@ namespace UmbCheckout.uSync.Serializers
             _configurationService = configurationService;
         }
 
-        protected override SyncAttempt<XElement> SerializeCore(UmbCheckoutConfiguration item, SyncSerializerOptions options)
+        protected override Task<SyncAttempt<XElement>> SerializeCoreAsync(UmbCheckoutConfiguration item, SyncSerializerOptions options)
         {
             var node = new XElement(ItemType,
                 new XAttribute("Id", item.Id),
@@ -37,6 +37,8 @@ namespace UmbCheckout.uSync.Serializers
                 cancelPageUrl.Add(new XElement("Trashed", cancelPage.Trashed));
                 cancelPageUrl.Add(new XElement("Udi", cancelPage.Udi));
                 cancelPageUrl.Add(new XElement("Url", cancelPage.Url));
+                cancelPageUrl.Add(new XElement("Type", cancelPage.Type));
+                cancelPageUrl.Add(new XElement("Unique", cancelPage.Unique));
             }
             node.Add(cancelPageUrl);
             var successPageUrl = new XElement("SuccessPageUrl");
@@ -49,16 +51,18 @@ namespace UmbCheckout.uSync.Serializers
                 successPageUrl.Add(new XElement("Trashed", successPage.Trashed));
                 successPageUrl.Add(new XElement("Udi", successPage.Udi));
                 successPageUrl.Add(new XElement("Url", successPage.Url));
+                successPageUrl.Add(new XElement("Type", successPage.Type));
+                successPageUrl.Add(new XElement("Unique", successPage.Unique));
             }
             node.Add(successPageUrl);
             node.Add(new XElement("EnableShipping", item.EnableShipping));
             node.Add(new XElement("StoreBasketInCookie", item.StoreBasketInCookie));
             node.Add(new XElement("StoreBasketInDatabase", item.StoreBasketInDatabase));
 
-            return SyncAttempt<XElement>.Succeed(Consts.Configuration.ItemType, node, typeof(UmbCheckoutConfiguration), ChangeType.Export);
+            return Task.FromResult(SyncAttempt<XElement>.Succeed(Consts.Configuration.ItemType, node, typeof(UmbCheckoutConfiguration), ChangeType.Export));
         }
 
-        protected override SyncAttempt<UmbCheckoutConfiguration> DeserializeCore(XElement node, SyncSerializerOptions options)
+        protected override Task<SyncAttempt<UmbCheckoutConfiguration>> DeserializeCoreAsync(XElement node, SyncSerializerOptions options)
         {
             var successPageUrlElement = node.Element("SuccessPageUrl");
             var successPageUrl = Enumerable.Empty<MultiUrlPicker>();
@@ -73,7 +77,9 @@ namespace UmbCheckout.uSync.Serializers
                         Published = successPageUrlElement.Element("Published").ValueOrDefault(false),
                         Trashed = successPageUrlElement.Element("Trashed").ValueOrDefault(false),
                         Udi = successPageUrlElement.Element("Udi").ValueOrDefault(string.Empty),
-                        Url = successPageUrlElement.Element("Url").ValueOrDefault(string.Empty)
+                        Url = successPageUrlElement.Element("Url").ValueOrDefault(string.Empty),
+                        Type = successPageUrlElement.Element("Type")?.Value,
+                        Unique = successPageUrlElement.Element("Unique")?.Value
                     }
                 };
             }
@@ -91,7 +97,9 @@ namespace UmbCheckout.uSync.Serializers
                         Published = cancelPageUrlElement.Element("Published").ValueOrDefault(false),
                         Trashed = cancelPageUrlElement.Element("Trashed").ValueOrDefault(false),
                         Udi = cancelPageUrlElement.Element("Udi").ValueOrDefault(string.Empty),
-                        Url = cancelPageUrlElement.Element("Url").ValueOrDefault(string.Empty)
+                        Url = cancelPageUrlElement.Element("Url").ValueOrDefault(string.Empty),
+                        Type = cancelPageUrlElement.Element("Type")?.Value,
+                        Unique = cancelPageUrlElement.Element("Unique")?.Value
                     }
                 };
             }
@@ -101,7 +109,7 @@ namespace UmbCheckout.uSync.Serializers
                 Id = node.Attribute("Id").ValueOrDefault(0),
                 CurrencyCode = node.Element("CurrencyCode").ValueOrDefault(string.Empty),
                 StoreBasketInDatabase = node!.Element("StoreBasketInDatabase").ValueOrDefault(false),
-                BasketInCookieExpiry = node!.Element("BasketInDatabaseExpiry").ValueOrDefault(30),
+                BasketInCookieExpiry = node!.Element("BasketInCookieExpiry").ValueOrDefault(30),
                 BasketInDatabaseExpiry = node!.Element("BasketInDatabaseExpiry").ValueOrDefault(30),
                 CancelPageUrl = cancelPageUrl,
                 SuccessPageUrl = successPageUrl,
@@ -110,20 +118,16 @@ namespace UmbCheckout.uSync.Serializers
             };
 
 
-            return SyncAttempt<UmbCheckoutConfiguration>.Succeed("Configuration", item, ChangeType.Import, Array.Empty<uSyncChange>());
+            return Task.FromResult(SyncAttempt<UmbCheckoutConfiguration>.Succeed("Configuration", item, ChangeType.Import, Array.Empty<uSyncChange>()));
         }
 
-        public override UmbCheckoutConfiguration FindItem(int id) => _configurationService.GetConfiguration().Result ?? new UmbCheckoutConfiguration();
+        public override async Task<UmbCheckoutConfiguration?> FindItemAsync(Guid key) => await _configurationService.GetConfiguration() ?? new UmbCheckoutConfiguration();
 
-        public override UmbCheckoutConfiguration FindItem(Guid key) => _configurationService.GetConfiguration().Result ?? new UmbCheckoutConfiguration();
+        public override Task<UmbCheckoutConfiguration?> FindItemAsync(string alias) => Task.FromResult<UmbCheckoutConfiguration?>(null);
 
-        public override UmbCheckoutConfiguration FindItem(string alias) => null!;
+        public override async Task SaveItemAsync(UmbCheckoutConfiguration item) => await _configurationService.UpdateConfiguration(item);
 
-        public override void SaveItem(UmbCheckoutConfiguration item) => _configurationService.UpdateConfiguration(item);
-
-        public override void DeleteItem(UmbCheckoutConfiguration item)
-        {
-        }
+        public override Task DeleteItemAsync(UmbCheckoutConfiguration item) => Task.CompletedTask;
 
         public override string ItemAlias(UmbCheckoutConfiguration item) => "UmbCheckoutConfiguration";
 
