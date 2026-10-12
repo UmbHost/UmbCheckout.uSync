@@ -21,7 +21,7 @@ namespace UmbCheckout.uSync.Handlers
     [SyncHandler("umbCheckoutHander", Consts.Configuration.HandlerName, Consts.Configuration.SerializerFolder, 1,
         Icon = "icon-settings usync-addon-icon", EntityType = Consts.Configuration.EntityType)]
     public class ConfigurationHandler : SyncHandlerRoot<UmbCheckoutConfiguration, UmbCheckoutConfiguration>, ISyncHandler,
-        INotificationHandler<OnConfigurationSavedNotification>
+        INotificationAsyncHandler<OnConfigurationSavedNotification>
     {
         public override string Group => Consts.Group;
 
@@ -60,7 +60,7 @@ namespace UmbCheckout.uSync.Handlers
             return Enumerable.Empty<uSyncAction>();
         }
 
-        public void Handle(OnConfigurationSavedNotification notification)
+        public async Task HandleAsync(OnConfigurationSavedNotification notification, CancellationToken cancellationToken)
         {
             if (!ShouldProcess()) return;
 
@@ -68,7 +68,7 @@ namespace UmbCheckout.uSync.Handlers
             {
                 if (notification.Configuration != null)
                 {
-                    ExportItemAsync(notification.Configuration).GetAwaiter().GetResult();
+                    await ExportItemAsync(notification.Configuration);
                 }
             }
             catch (Exception ex)

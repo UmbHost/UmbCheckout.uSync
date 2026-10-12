@@ -11,7 +11,7 @@ namespace UmbCheckout.uSync.Composers
     {
         public void Compose(IUmbracoBuilder builder)
         {
-            builder.AddNotificationHandler<OnConfigurationSavedNotification, ConfigurationHandler>();
+            builder.AddNotificationAsyncHandler<OnConfigurationSavedNotification, ConfigurationHandler>();
             // A fresh install's first-boot import runs before the tables are migrated at startup
             builder.EnsureUmbCheckoutTablesOn<uSyncImportStartingNotification>();
         }
