@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using UmbCheckout.Core.Interfaces;
 using UmbCheckout.Shared.Models;
 using UmbCheckout.Shared.Notifications.Configuration;
@@ -10,7 +10,10 @@ using uSync.BackOffice;
 using uSync.BackOffice.Configuration;
 using uSync.BackOffice.Services;
 using uSync.BackOffice.SyncHandlers;
+using uSync.BackOffice.SyncHandlers.Interfaces;
+using uSync.BackOffice.SyncHandlers.Models;
 using uSync.Core;
+using uSync.Core.Serialization;
 
 namespace UmbCheckout.uSync.Handlers
 {
@@ -22,25 +25,38 @@ namespace UmbCheckout.uSync.Handlers
         public override string Group => Consts.Group;
 
         private readonly IConfigurationService _configurationService;
-        public ConfigurationHandler(ILogger<SyncHandlerRoot<UmbCheckoutConfiguration, UmbCheckoutConfiguration>> logger, AppCaches appCaches, IShortStringHelper shortStringHelper, SyncFileService syncFileService, uSyncEventService mutexService, uSyncConfigService uSyncConfig, ISyncItemFactory itemFactory, IConfigurationService configurationService) : base(logger, appCaches, shortStringHelper, syncFileService, mutexService, uSyncConfig, itemFactory)
+        public ConfigurationHandler(ILogger<SyncHandlerRoot<UmbCheckoutConfiguration, UmbCheckoutConfiguration>> logger, AppCaches appCaches, IShortStringHelper shortStringHelper, ISyncFileService syncFileService, ISyncEventService mutexService, ISyncConfigService uSyncConfig, ISyncItemFactory itemFactory, IConfigurationService configurationService) : base(logger, appCaches, shortStringHelper, syncFileService, mutexService, uSyncConfig, itemFactory)
         {
             _configurationService = configurationService;
 
-            itemContainerType = UmbracoObjectTypes.Unknown;
+            ItemContainerType = UmbracoObjectTypes.Unknown;
         }
 
-        public override IEnumerable<uSyncAction> ExportAll(UmbCheckoutConfiguration parent, string folder, HandlerSettings config,
-            SyncUpdateCallback callback)
+        public override async Task<IEnumerable<uSyncAction>> ExportAllAsync(UmbCheckoutConfiguration? parent, string[] folders, HandlerSettings config,
+            SyncUpdateCallback? callback)
         {
-            var item = _configurationService.GetConfiguration().Result;
+            var item = await _configurationService.GetConfiguration();
 
             var actions = new List<uSyncAction>();
             if (item != null)
             {
-                actions.AddRange(Export(item, Path.Combine(rootFolder, DefaultFolder), DefaultConfig));
+                actions.AddRange(await ExportItemAsync(item));
             }
 
             return actions;
+        }
+
+        private async Task<IEnumerable<uSyncAction>> ExportItemAsync(UmbCheckoutConfiguration item)
+        {
+            var folder = Path.Combine(RootFolders.First(), DefaultFolder);
+            var attempt = await serializer.SerializeAsync(item, new SyncSerializerOptions());
+            if (attempt.Success && attempt.Item != null)
+            {
+                var filename = Path.Combine(folder, $"{GetItemFileName(item)}.config");
+                await syncFileService.SaveXElementAsync(attempt.Item, filename);
+                return new[] { uSyncAction.SetAction(true, GetItemName(item), change: ChangeType.Export, filename: filename) };
+            }
+            return Enumerable.Empty<uSyncAction>();
         }
 
         public void Handle(OnConfigurationSavedNotification notification)
@@ -51,11 +67,7 @@ namespace UmbCheckout.uSync.Handlers
             {
                 if (notification.Configuration != null)
                 {
-                    var attempts = Export(notification.Configuration, Path.Combine(rootFolder, DefaultFolder), DefaultConfig);
-                    foreach (var attempt in attempts.Where(x => x.Success))
-                    {
-                        CleanUp(notification.Configuration, attempt.FileName, Path.Combine(rootFolder, DefaultFolder));
-                    }
+                    ExportItemAsync(notification.Configuration).GetAwaiter().GetResult();
                 }
             }
             catch (Exception ex)
@@ -64,17 +76,17 @@ namespace UmbCheckout.uSync.Handlers
             }
         }
 
-        protected override IEnumerable<uSyncAction> DeleteMissingItems(UmbCheckoutConfiguration parent, IEnumerable<Guid> keysToKeep, bool reportOnly)
-            => Enumerable.Empty<uSyncAction>();
+        protected override Task<IEnumerable<uSyncAction>> DeleteMissingItemsAsync(UmbCheckoutConfiguration parent, IEnumerable<Guid> keysToKeep, bool reportOnly)
+            => Task.FromResult(Enumerable.Empty<uSyncAction>());
 
-        protected override IEnumerable<UmbCheckoutConfiguration> GetChildItems(UmbCheckoutConfiguration parent)
-            => Enumerable.Empty<UmbCheckoutConfiguration>();
+        protected override Task<IEnumerable<UmbCheckoutConfiguration>> GetChildItemsAsync(UmbCheckoutConfiguration? parent)
+            => Task.FromResult(Enumerable.Empty<UmbCheckoutConfiguration>());
 
-        protected override IEnumerable<UmbCheckoutConfiguration> GetFolders(UmbCheckoutConfiguration parent)
-            => Enumerable.Empty<UmbCheckoutConfiguration>();
+        protected override Task<IEnumerable<UmbCheckoutConfiguration>> GetFoldersAsync(UmbCheckoutConfiguration? parent)
+            => Task.FromResult(Enumerable.Empty<UmbCheckoutConfiguration>());
 
-        protected override UmbCheckoutConfiguration GetFromService(UmbCheckoutConfiguration item)
-            => _configurationService.GetConfiguration().Result ?? new UmbCheckoutConfiguration();
+        protected override async Task<UmbCheckoutConfiguration> GetFromServiceAsync(UmbCheckoutConfiguration? item)
+            => await _configurationService.GetConfiguration() ?? new UmbCheckoutConfiguration();
 
         protected override string GetItemName(UmbCheckoutConfiguration item)
             => item.Id.ToString();
