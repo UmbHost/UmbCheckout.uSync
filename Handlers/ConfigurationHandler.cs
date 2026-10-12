@@ -85,7 +85,7 @@ namespace UmbCheckout.uSync.Handlers
         protected override Task<IEnumerable<UmbCheckoutConfiguration>> GetFoldersAsync(UmbCheckoutConfiguration? parent)
             => Task.FromResult(Enumerable.Empty<UmbCheckoutConfiguration>());
 
-        protected override async Task<UmbCheckoutConfiguration> GetFromServiceAsync(UmbCheckoutConfiguration? item)
+        protected override async Task<UmbCheckoutConfiguration?> GetFromServiceAsync(UmbCheckoutConfiguration? item)
             => await _configurationService.GetConfigurationAsync() ?? new UmbCheckoutConfiguration();
 
         protected override string GetItemName(UmbCheckoutConfiguration item)
