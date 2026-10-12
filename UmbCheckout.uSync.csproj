@@ -43,7 +43,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Umbraco.Cms.Core" Version="[17.0.0, 18)" />
+		<PackageReference Include="Umbraco.Cms.Core" Version="[17.6.0, 18)" />
 		<PackageReference Include="uSync.Core" Version="[17.0.0, 18)" />
 		<PackageReference Include="uSync.BackOffice" Version="[17.0.0, 18)" />
 	</ItemGroup>

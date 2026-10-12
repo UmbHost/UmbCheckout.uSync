@@ -25,7 +25,7 @@ namespace UmbCheckout.uSync
                 {
                     Id = $"{Shared.Consts.PackageName}.uSync",
                     Name = $"{Shared.Consts.PackageName}.uSync",
-                    Version = UmbCheckoutVersion.Version.ToString(3),
+                    Version = UmbCheckoutVersion.PackageVersion,
                     AllowTelemetry = true,
                     Extensions = []
                 }
