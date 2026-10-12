@@ -120,7 +120,14 @@ namespace UmbCheckout.uSync.Serializers
         public override Task<UmbCheckoutConfiguration?> FindItemAsync(string alias) =>
             Task.FromResult<UmbCheckoutConfiguration?>(null);
 
-        public override Task SaveItemAsync(UmbCheckoutConfiguration item) => _configurationService.UpdateConfigurationAsync(item);
+        public override async Task SaveItemAsync(UmbCheckoutConfiguration item)
+        {
+            // A refused save (e.g. a site's Saving handler cancelled it) must show as a failed import, not a success.
+            if (!await _configurationService.UpdateConfigurationAsync(item))
+            {
+                throw new InvalidOperationException("The UmbCheckout configuration was not saved.");
+            }
+        }
 
         public override Task DeleteItemAsync(UmbCheckoutConfiguration item)
         {
