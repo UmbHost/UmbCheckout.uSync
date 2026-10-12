@@ -35,7 +35,7 @@ namespace UmbCheckout.uSync.Handlers
         public override async Task<IEnumerable<uSyncAction>> ExportAllAsync(UmbCheckoutConfiguration? parent, string[] folders, HandlerSettings config,
             SyncUpdateCallback? callback)
         {
-            var item = await _configurationService.GetConfiguration();
+            var item = await _configurationService.GetConfigurationAsync();
 
             var actions = new List<uSyncAction>();
             if (item != null)
@@ -86,7 +86,7 @@ namespace UmbCheckout.uSync.Handlers
             => Task.FromResult(Enumerable.Empty<UmbCheckoutConfiguration>());
 
         protected override async Task<UmbCheckoutConfiguration> GetFromServiceAsync(UmbCheckoutConfiguration? item)
-            => await _configurationService.GetConfiguration() ?? new UmbCheckoutConfiguration();
+            => await _configurationService.GetConfigurationAsync() ?? new UmbCheckoutConfiguration();
 
         protected override string GetItemName(UmbCheckoutConfiguration item)
             => item.Id.ToString();

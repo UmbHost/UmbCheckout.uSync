@@ -113,17 +113,13 @@ namespace UmbCheckout.uSync.Serializers
             return Task.FromResult(SyncAttempt<UmbCheckoutConfiguration>.Succeed("Configuration", item, ChangeType.Import, Array.Empty<uSyncChange>()));
         }
 
-        public override Task<UmbCheckoutConfiguration?> FindItemAsync(Guid key) =>
-            Task.FromResult<UmbCheckoutConfiguration?>(_configurationService.GetConfiguration().Result ?? new UmbCheckoutConfiguration());
+        public override async Task<UmbCheckoutConfiguration?> FindItemAsync(Guid key) =>
+            await _configurationService.GetConfigurationAsync() ?? new UmbCheckoutConfiguration();
 
         public override Task<UmbCheckoutConfiguration?> FindItemAsync(string alias) =>
             Task.FromResult<UmbCheckoutConfiguration?>(null);
 
-        public override Task SaveItemAsync(UmbCheckoutConfiguration item)
-        {
-            _configurationService.UpdateConfiguration(item);
-            return Task.CompletedTask;
-        }
+        public override Task SaveItemAsync(UmbCheckoutConfiguration item) => _configurationService.UpdateConfigurationAsync(item);
 
         public override Task DeleteItemAsync(UmbCheckoutConfiguration item)
         {
