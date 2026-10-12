@@ -1,3 +1,4 @@
+using UmbCheckout.Shared.Notifications;
 using Microsoft.Extensions.Logging;
 using UmbCheckout.Core.Interfaces;
 using UmbCheckout.Shared.Models;
@@ -35,7 +36,7 @@ namespace UmbCheckout.uSync.Handlers
         public override async Task<IEnumerable<uSyncAction>> ExportAllAsync(UmbCheckoutConfiguration? parent, string[] folders, HandlerSettings config,
             SyncUpdateCallback? callback)
         {
-            var item = await _configurationService.GetConfigurationAsync();
+            var item = await UmbCheckoutHooks.ReadStoredAsync(() => _configurationService.GetConfigurationAsync());
 
             var actions = new List<uSyncAction>();
             if (item != null)
@@ -86,7 +87,7 @@ namespace UmbCheckout.uSync.Handlers
             => Task.FromResult(Enumerable.Empty<UmbCheckoutConfiguration>());
 
         protected override async Task<UmbCheckoutConfiguration?> GetFromServiceAsync(UmbCheckoutConfiguration? item)
-            => await _configurationService.GetConfigurationAsync() ?? new UmbCheckoutConfiguration();
+            => await UmbCheckoutHooks.ReadStoredAsync(() => _configurationService.GetConfigurationAsync()) ?? new UmbCheckoutConfiguration();
 
         protected override string GetItemName(UmbCheckoutConfiguration item)
             => item.Id.ToString();

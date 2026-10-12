@@ -1,3 +1,4 @@
+using UmbCheckout.Shared.Notifications;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using UmbCheckout.Core.Interfaces;
@@ -114,7 +115,7 @@ namespace UmbCheckout.uSync.Serializers
         }
 
         public override async Task<UmbCheckoutConfiguration?> FindItemAsync(Guid key) =>
-            await _configurationService.GetConfigurationAsync() ?? new UmbCheckoutConfiguration();
+            await UmbCheckoutHooks.ReadStoredAsync(() => _configurationService.GetConfigurationAsync()) ?? new UmbCheckoutConfiguration();
 
         public override Task<UmbCheckoutConfiguration?> FindItemAsync(string alias) =>
             Task.FromResult<UmbCheckoutConfiguration?>(null);
