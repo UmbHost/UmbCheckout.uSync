@@ -101,7 +101,7 @@ namespace UmbCheckout.uSync.Serializers
                 Id = node.Attribute("Id").ValueOrDefault(0),
                 CurrencyCode = node.Element("CurrencyCode").ValueOrDefault(string.Empty),
                 StoreBasketInDatabase = node!.Element("StoreBasketInDatabase").ValueOrDefault(false),
-                BasketInCookieExpiry = node!.Element("BasketInDatabaseExpiry").ValueOrDefault(30),
+                BasketInCookieExpiry = node!.Element("BasketInCookieExpiry").ValueOrDefault(30),
                 BasketInDatabaseExpiry = node!.Element("BasketInDatabaseExpiry").ValueOrDefault(30),
                 CancelPageUrl = cancelPageUrl,
                 SuccessPageUrl = successPageUrl,
