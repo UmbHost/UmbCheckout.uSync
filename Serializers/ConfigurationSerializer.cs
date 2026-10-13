@@ -119,7 +119,15 @@ namespace UmbCheckout.uSync.Serializers
 
         public override UmbCheckoutConfiguration FindItem(string alias) => null!;
 
-        public override void SaveItem(UmbCheckoutConfiguration item) => _configurationService.UpdateConfiguration(item);
+        public override void SaveItem(UmbCheckoutConfiguration item)
+        {
+            // uSync's serializers are synchronous here, so the save is waited for (it was fire-and-forget: a failure was never seen).
+            // A refused save must show as a failed item, not a success.
+            if (!_configurationService.UpdateConfiguration(item).GetAwaiter().GetResult())
+            {
+                throw new InvalidOperationException("The UmbCheckout configuration was not saved.");
+            }
+        }
 
         public override void DeleteItem(UmbCheckoutConfiguration item)
         {
