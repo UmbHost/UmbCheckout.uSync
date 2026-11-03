@@ -1,4 +1,6 @@
-﻿using UmbCheckout.Shared.Notifications.Configuration;
+﻿using global::uSync.BackOffice;
+using UmbCheckout.Shared.Notifications.Configuration;
+using UmbCheckout.Shared.Persistence;
 using UmbCheckout.uSync.Handlers;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.DependencyInjection;
@@ -9,7 +11,9 @@ namespace UmbCheckout.uSync.Composers
     {
         public void Compose(IUmbracoBuilder builder)
         {
-            builder.AddNotificationHandler<OnConfigurationSavedNotification, ConfigurationHandler>();
+            builder.AddNotificationAsyncHandler<OnConfigurationSavedNotification, ConfigurationHandler>();
+            // A fresh install's first-boot import runs before the tables are migrated at startup
+            builder.EnsureUmbCheckoutTablesOn<uSyncImportStartingNotification>();
         }
     }
 }

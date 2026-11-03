@@ -1,4 +1,5 @@
-﻿using System.Xml.Linq;
+using UmbCheckout.Shared.Notifications;
+using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using UmbCheckout.Core.Interfaces;
 using UmbCheckout.Shared.Models;
@@ -17,7 +18,7 @@ namespace UmbCheckout.uSync.Serializers
             _configurationService = configurationService;
         }
 
-        protected override SyncAttempt<XElement> SerializeCore(UmbCheckoutConfiguration item, SyncSerializerOptions options)
+        protected override Task<SyncAttempt<XElement>> SerializeCoreAsync(UmbCheckoutConfiguration item, SyncSerializerOptions options)
         {
             var node = new XElement(ItemType,
                 new XAttribute("Id", item.Id),
@@ -55,10 +56,10 @@ namespace UmbCheckout.uSync.Serializers
             node.Add(new XElement("StoreBasketInCookie", item.StoreBasketInCookie));
             node.Add(new XElement("StoreBasketInDatabase", item.StoreBasketInDatabase));
 
-            return SyncAttempt<XElement>.Succeed(Consts.Configuration.ItemType, node, typeof(UmbCheckoutConfiguration), ChangeType.Export);
+            return Task.FromResult(SyncAttempt<XElement>.Succeed(Consts.Configuration.ItemType, node, typeof(UmbCheckoutConfiguration), ChangeType.Export));
         }
 
-        protected override SyncAttempt<UmbCheckoutConfiguration> DeserializeCore(XElement node, SyncSerializerOptions options)
+        protected override Task<SyncAttempt<UmbCheckoutConfiguration>> DeserializeCoreAsync(XElement node, SyncSerializerOptions options)
         {
             var successPageUrlElement = node.Element("SuccessPageUrl");
             var successPageUrl = Enumerable.Empty<MultiUrlPicker>();
@@ -100,29 +101,37 @@ namespace UmbCheckout.uSync.Serializers
             {
                 Id = node.Attribute("Id").ValueOrDefault(0),
                 CurrencyCode = node.Element("CurrencyCode").ValueOrDefault(string.Empty),
-                StoreBasketInDatabase = node!.Element("StoreBasketInDatabase").ValueOrDefault(false),
-                BasketInCookieExpiry = node!.Element("BasketInDatabaseExpiry").ValueOrDefault(30),
-                BasketInDatabaseExpiry = node!.Element("BasketInDatabaseExpiry").ValueOrDefault(30),
+                StoreBasketInDatabase = node.Element("StoreBasketInDatabase").ValueOrDefault(false),
+                BasketInCookieExpiry = node.Element("BasketInCookieExpiry").ValueOrDefault(30),
+                BasketInDatabaseExpiry = node.Element("BasketInDatabaseExpiry").ValueOrDefault(30),
                 CancelPageUrl = cancelPageUrl,
                 SuccessPageUrl = successPageUrl,
-                EnableShipping = node!.Element("EnableShipping").ValueOrDefault(false),
-                StoreBasketInCookie = node!.Element("StoreBasketInCookie").ValueOrDefault(false)
+                EnableShipping = node.Element("EnableShipping").ValueOrDefault(false),
+                StoreBasketInCookie = node.Element("StoreBasketInCookie").ValueOrDefault(false)
             };
 
 
-            return SyncAttempt<UmbCheckoutConfiguration>.Succeed("Configuration", item, ChangeType.Import, Array.Empty<uSyncChange>());
+            return Task.FromResult(SyncAttempt<UmbCheckoutConfiguration>.Succeed("Configuration", item, ChangeType.Import, Array.Empty<uSyncChange>()));
         }
 
-        public override UmbCheckoutConfiguration FindItem(int id) => _configurationService.GetConfiguration().Result ?? new UmbCheckoutConfiguration();
+        public override async Task<UmbCheckoutConfiguration?> FindItemAsync(Guid key) =>
+            await UmbCheckoutHooks.ReadStoredAsync(() => _configurationService.GetConfigurationAsync()) ?? new UmbCheckoutConfiguration();
 
-        public override UmbCheckoutConfiguration FindItem(Guid key) => _configurationService.GetConfiguration().Result ?? new UmbCheckoutConfiguration();
+        public override Task<UmbCheckoutConfiguration?> FindItemAsync(string alias) =>
+            Task.FromResult<UmbCheckoutConfiguration?>(null);
 
-        public override UmbCheckoutConfiguration FindItem(string alias) => null!;
-
-        public override void SaveItem(UmbCheckoutConfiguration item) => _configurationService.UpdateConfiguration(item);
-
-        public override void DeleteItem(UmbCheckoutConfiguration item)
+        public override async Task SaveItemAsync(UmbCheckoutConfiguration item)
         {
+            // A refused save (e.g. a site's Saving handler cancelled it) must show as a failed import, not a success.
+            if (!await _configurationService.UpdateConfigurationAsync(item))
+            {
+                throw new InvalidOperationException("The UmbCheckout configuration was not saved.");
+            }
+        }
+
+        public override Task DeleteItemAsync(UmbCheckoutConfiguration item)
+        {
+            return Task.CompletedTask;
         }
 
         public override string ItemAlias(UmbCheckoutConfiguration item) => "UmbCheckoutConfiguration";
